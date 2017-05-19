@@ -1,0 +1,8 @@
+someFunction()
+{
+    statement;
+    statement += 1;
+    a = 4;
+    b = a + 2;
+    return b;;;
+}}}
