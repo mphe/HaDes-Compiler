@@ -1,38 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# a + b;
-# a + (b - c);
-# (a + b) * (c - d) / x;
+import logging
+import string
 
 FINAL_STATE = "program"
 
 RULES = [
-    # ( "mult", [
-    #     "expr * expr".split(),
-    # ]),
-    #
-    # ( "div", [
-    #     "expr / expr".split(),
-    # ]),
-    #
-    # ( "add", [
-    #     "expr + expr".split(),
-    # ]),
-    #
-    # ( "sub", [
-    #     "expr - expr".split(),
-    # ]),
-
-    # ( "expr", [
-    #     [ "id" ],
-    #     [ "literal" ],
-    #     [ "mult" ],
-    #     [ "div" ],
-    #     [ "add" ],
-    #     [ "sub" ],
-    #     "( expr )".split(),
-    # ]),
-
     ( "expr", [
         "expr + term".split(),
         "expr - term".split(),
@@ -59,8 +32,6 @@ RULES = [
     ( "statement_list", [
         [ "statement" ],
         "statement_list statement".split(),
-        # "statement statement_list".split(),
-        # "statement_list statement_list".split(),
     ]),
 
     ( "function", [
@@ -73,10 +44,14 @@ RULES = [
     ]),
 ]
 
-TERMINALS = [
-    "id",
-    "literal",
-]
+# TERMINALS = [
+#     ( "literal", string.digits ),
+#     ( "id", string.ascii_letters + string.digits + "_" ),
+#     ( "operator", "+ - * / % = < > == && ||".split() ),
+#     ( "control", "{()};" ),
+# ]
+#
+# WHITESPACE = string.whitespace
 
 
 class Token(object):
@@ -84,20 +59,21 @@ class Token(object):
         self.name = name
         self.tokens = tokens
 
+    def print(self, depth = 0):
+        logging.info(" " * depth + self.name)
+        for i in self.tokens:
+            i.print(depth + 1)
+
+    def _simplify(self):
+        while len(self.tokens) == 1:
+            self.name = self.tokens[0].name
+            self.tokens = self.tokens[0].tokens
+
+        for i in self.tokens:
+            i._simplify()
+
     def __str__(self):
         return self.name
-
-
-def requires_rule(rule, subrule):
-    """Returns true if a certain subrule is referenced by another rule.
-
-    rule must be the rule array (e.g. as returned by find_rule).
-    subrule is the name of the rule to search.
-    """
-    for i in rule:
-        if subrule in i:
-            return True
-    return False
 
 
 def find_rule(name, rules=RULES):
@@ -105,7 +81,6 @@ def find_rule(name, rules=RULES):
         if i[0] == name:
             return i
     return None
-
 
 def match(tokens, rule):
     """Checks if a token stream matches a rule.
@@ -130,64 +105,3 @@ def get_matching(tokens, rules=RULES):
 def get_full_matches(tokens, rules=RULES):
     """Returns a list of rule names that completely match the token stream."""
     return [ i[0] for i in rules if match(tokens, i[1]) == 2 ]
-
-
-# def match(tokens, rule):
-#     """Checks if a token stream matches a rule.
-#
-#     Returns 0 if it doesn't match, 1 if it matches the begin, and 2 if it
-#     matches entirely.
-#     """
-#     for r in rule:
-#         if len(tokens) > len(r):
-#             continue
-#         for i in range(len(tokens)):
-#             if str(tokens[i]) != r[i]:
-#                 break
-#         else:   # executed if the loop ends without break
-#             return 2 if len(tokens) == len(r) else 1
-#     return 0
-#
-# def get_matching(tokens, rules=RULES):
-#     """Takes a list of tokens and returns all rules beginning with these tokens"""
-#     return { k: v for k,v in rules.items() if match(tokens, v) }
-#
-# def get_full_matches(tokens, rules=RULES):
-#     """Returns a list of rule names that completely match the token stream."""
-#     return [ k for k,v in rules.items() if match(tokens, v) == 2 ]
-#
-
-# RULES = {
-#     "program": [
-#         [ "statement_list" ],
-#     ],
-#     "statement_list": [
-#         [ "statement" ],
-#         "statement statement_list".split(),
-#     ],
-#     "statement": [
-#         "expr ;".split(),
-#         [ ";" ],
-#     ],
-#     "expr": [
-#         [ "id" ],
-#         [ "literal" ],
-#         [ "mult" ],
-#         [ "div" ],
-#         [ "add" ],
-#         [ "sub" ],
-#         "( expr )".split(),
-#     ],
-#     "mult": [
-#         "expr * expr".split(),
-#     ],
-#     "div": [
-#         "expr / expr".split(),
-#     ],
-#     "add": [
-#         "expr + expr".split(),
-#     ],
-#     "sub": [
-#         "expr - expr".split(),
-#     ],
-# }
