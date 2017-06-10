@@ -64,14 +64,33 @@ TERMINALS = [
 WHITESPACE = to_regex(chars=string.whitespace)
 
 
+class Position(object):
+    def __init__(self, pos=-1, line=-1, col=-1):
+        self.pos = pos
+        self.line = line
+        self.col = col
+
+    def increase(self):
+        self.pos += 1
+        self.col += 1
+
+    def new_line(self):
+        self.pos += 1
+        self.line += 1
+        self.col = 0
+
+    def clone(self):
+        return Position(self.pos, self.line, self.col)
+
+
 class Token(object):
-    def __init__(self, lexeme, ttype="", position=-1, tokens=[]):
+    def __init__(self, lexeme, ttype="", position=None, tokens=[]):
         self.lexeme = lexeme
         self.type = ttype if ttype else lexeme
         self.tokens = tokens
 
-        if position == -1 and tokens:
-            self.position = tokens[0].position  # position in input stream
+        if not position and tokens:
+            self.position = tokens[0].position
         else:
             self.position = position
 

@@ -5,7 +5,7 @@ import grammar
 class Scanner(object):
     def __init__(self):
         self.text = ""
-        self.pos = 0
+        self.posinfo = grammar.Position()
 
     def parse_file(self, fname):
         with open(fname, "r") as f:
@@ -13,7 +13,7 @@ class Scanner(object):
         return self._parse()
 
     def _parse(self):
-        self.pos = 0
+        self.posinfo = grammar.Position(0, 0, 0)
         symbols = []
         while not self._eof():
             s = self._read_symbol()
@@ -22,7 +22,7 @@ class Scanner(object):
         return symbols
 
     def _read_symbol(self):
-        startpos = self.pos
+        startpos = self.posinfo.clone()
         word = ""
         symbol = None
         c = self._read_char()
@@ -35,6 +35,7 @@ class Scanner(object):
         else:
             return None
 
+        lastposinfo = self.posinfo.clone()  # used to restore position afterwards
         while c and symbol[1].match(word + c):
             # Handle \n as it isn't picked up by regex apparently
             # NOTE: Code changed since then, might need to test again to see
@@ -42,25 +43,31 @@ class Scanner(object):
             if not grammar.WHITESPACE.match(c):
                 word += c
                 symbol = grammar.categorize_word(word)
+            lastposinfo = self.posinfo.clone()
             c = self._read_char(False)
 
         if not self._eof():
-            self.pos -= 1
+            self.posinfo = lastposinfo
 
-        return grammar.Token(
-            word, symbol[0], position=startpos)
+        return grammar.Token(word, symbol[0], position=startpos)
 
     def _read_char(self, skipws=True):
         if self._eof():
             return None
 
-        while skipws and grammar.WHITESPACE.match(self.text[self.pos]):
-            self.pos += 1
+        while skipws and grammar.WHITESPACE.match(self.text[self.posinfo.pos]):
+            self._advance()
             if self._eof():
                 return None
 
-        self.pos += 1
-        return self.text[self.pos - 1]
+        self._advance()
+        return self.text[self.posinfo.pos - 1]
+
+    def _advance(self):
+        if self.text[self.posinfo.pos] == "\n":
+            self.posinfo.new_line()
+        else:
+            self.posinfo.increase()
 
     def _eof(self):
-        return self.pos >= len(self.text)
+        return self.posinfo.pos >= len(self.text)

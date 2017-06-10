@@ -1,8 +1,16 @@
 someFunction()
 {
     statement;
-    statement += 1;
-    a = 4;
-    b = a + 2;
-    return b;;;
-}}}
+    statement + 1;
+    4;
+    a + 2;
+};
+
+foo()
+{
+    a + (b - c);
+    (a + b) / (b - c);
+}
+
+1*x + y;
+a + b - c / d;

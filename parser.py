@@ -32,7 +32,10 @@ class Parser(object):
                 if self._eof():
                     break
                 else:
-                    logging.error("Syntax Error")
+                    logging.error("Syntax Error:")
+                    errsym = self.symbols[self.pos]
+                    logging.error("\tIn line {}, column {}: {}".format(
+                        errsym.position.line + 1, errsym.position.col + 1, errsym ))
                     return None
             else:
                 program.append(token)
