@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import symbols
-
+import grammar
 
 class Scanner(object):
     def __init__(self):
@@ -25,35 +24,37 @@ class Scanner(object):
     def _read_symbol(self):
         startpos = self.pos
         word = ""
-        pattern = None
+        symbol = None
         c = self._read_char()
 
         if c:
-            pattern = symbols.categorize_word(c)
-            if not pattern:
-                print("Error: Unknown character: " + c)
+            symbol = grammar.categorize_word(c)
+            if not symbol:
+                print("Error: Unknown symbol: " + c)
                 return None
         else:
             return None
 
-        while c and pattern.match(word + c):
+        while c and symbol[1].match(word + c):
             # Handle \n as it isn't picked up by regex apparently
-            if not symbols.PATTERN_WHITESPACE.match(c):
+            # NOTE: Code changed since then, might need to test again to see
+            #       if this is still necessary
+            if not grammar.WHITESPACE.match(c):
                 word += c
-                pattern = symbols.categorize_word(word)
+                symbol = grammar.categorize_word(word)
             c = self._read_char(False)
 
         if not self._eof():
             self.pos -= 1
 
-        return symbols.Symbol(
-            word, startpos, symbols.SymbolType.from_pattern(pattern))
+        return grammar.Token(
+            word, symbol[0], position=startpos)
 
     def _read_char(self, skipws=True):
         if self._eof():
             return None
 
-        while skipws and symbols.PATTERN_WHITESPACE.match(self.text[self.pos]):
+        while skipws and grammar.WHITESPACE.match(self.text[self.pos]):
             self.pos += 1
             if self._eof():
                 return None

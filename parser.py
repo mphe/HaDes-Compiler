@@ -6,7 +6,7 @@ import logging
 
 
 def str_list(l):
-    return ", ".join([ str(i) for i in l ])
+    return ", ".join([ i.bnf() for i in l ])
 
 
 class Parser(object):
@@ -21,13 +21,13 @@ class Parser(object):
 
     def _parse(self):
         self.pos = 0
-        tokens = []
-        token = []
+        program = []
+        token = None
 
         logging.debug("Symbol stream: " + str_list(self.symbols))
 
         while True:
-            token = self._parse_greedy(token, [ grammar.find_rule("program") ])
+            token = self._parse_greedy(rules=[ grammar.find_rule("program") ])
             if not token:
                 if self._eof():
                     break
@@ -35,15 +35,17 @@ class Parser(object):
                     logging.error("Syntax Error")
                     return None
             else:
-                tokens.append(token)
-                token = []
+                program.append(token)
 
-        out = grammar.Token("root", tokens)
+        out = grammar.Token("root", tokens=program)
         out._simplify()
         return out
 
-    def _parse_greedy(self, tstream, rules=grammar.RULES):
-        logging.debug("searching greedy at " + str(self.pos) + ": " + ", ".join([ str(i[0]) for i in rules ]))
+    def _parse_greedy(self, tstream=None, rules=grammar.RULES):
+        if tstream is None:
+            tstream = []
+
+        logging.debug("searching greedy at {!s}: {}".format(self.pos, ", ".join([ i[0] for i in rules ])))
         logging.debug("to complete: " + str_list(tstream))
         token = []  # Always contains 1 token (except here)
         solution = (None, self.pos) # stores a solution and its stream position
@@ -63,17 +65,17 @@ class Parser(object):
 
                 # check if the found token is a solution and update it
                 if grammar.get_matching(tstream + token, rules):
-                    solution = (token, self.pos)
-                    logging.debug("found solution: " + str(newtoken))
+                    solution = (newtoken, self.pos)
+                    logging.debug("found solution: " + newtoken.bnf())
                 else:
-                    logging.debug("found greedy (but not a solution): " + str(newtoken))
+                    logging.debug("found greedy (but not a solution): " + newtoken.bnf())
                     logging.debug("\tintial search constraints:")
-                    logging.debug("\t\tsearching greedy: " + ", ".join([ str(i[0]) for i in rules ]))
+                    logging.debug("\t\tsearching greedy: " + ", ".join([ i[0] for i in rules ]))
                     logging.debug("\t\tto complete: " + str_list(tstream))
 
-        logging.debug("return greedy: " + str(solution[0][0] if solution[0] else None))
+        logging.debug("return greedy: " + (solution[0].bnf() if solution[0] else "None"))
         self.pos = solution[1]
-        return solution[0][0] if solution[0] else None
+        return solution[0]
 
     def _parse_tokenstream(self, tstream=None):
         if tstream is None:
@@ -99,13 +101,13 @@ class Parser(object):
                 if len(full) > 1:
                     logging.debug("\tambiguous:")
                     for i in full:
-                        logging.debug("\t\t" + str(i))
+                        logging.debug("\t\t" + i)
                     logging.debug("\tusing first one")
 
-                logging.debug("\tfound match: " + str(full[0]))
+                logging.debug("\tfound match: " + full[0])
                 for i in tstream:
-                    logging.debug("\t\t" + str(i))
-                return grammar.Token(full[0], tstream)
+                    logging.debug("\t\t" + i.bnf())
+                return grammar.Token(full[0], tokens=tstream)
 
             elif len(full) == 0:
                 t = self._parse_greedy(tstream, grammar.get_matching(tstream))
@@ -113,14 +115,14 @@ class Parser(object):
                     logging.debug("\tnothing found, return None")
                     return None
                 else:
-                    logging.debug("\tfound: " + str(t))
+                    logging.debug("\tfound: " + t.bnf())
                     tstream.append(t)
                     continue   # effectively restarts the function
 
     def _read_token(self):
-        s = None if self._eof() else self.symbols[self.pos]
+        s = None if self._eof() or self.pos < 0 else self.symbols[self.pos]
         self.pos += 1
-        return grammar.Token(str(s))
+        return s
 
     def _eof(self):
         return self.pos >= len(self.symbols)
