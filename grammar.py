@@ -100,14 +100,14 @@ class Token(object):
             i.print(depth + 1)
 
     def _simplify(self):
+        for i in self.tokens:
+            i._simplify()
+
         # strip control chars
         self.tokens = [ i for i in self.tokens if i.type != "control" ]
 
         while len(self.tokens) == 1:
             self._clone(self.tokens[0])
-
-        for i in self.tokens:
-            i._simplify()
 
     def _clone(self, token):
         self.lexeme = token.lexeme
