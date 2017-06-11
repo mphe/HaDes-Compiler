@@ -6,25 +6,14 @@ import parser
 import logging
 import argparse
 
-# def main():
-#     parser = argparse.ArgumentParser(description="", epilog="")
-#     parser.add_argument("-v", "--verbose", help="Show debug output", action="store_true")
-#     args = parser.parse_args()
-#
-#     if not args.profile and not args.api:
-#         parser.error("an API and/or a profile has to specified.")
-#         return 1
-#
-#     logging.basicConfig(level=(logging.DEBUG if args.verbose else logging.INFO),
-#                         format="%(levelname)s:%(message)s")
-
-
 def main():
-    logging.basicConfig(level=logging.DEBUG, format="%(levelname)s:%(message)s")
+    argparser = argparse.ArgumentParser(description="", epilog="")
+    argparser.add_argument("-v", "--verbose", help="Show debug output", action="store_true")
+    argparser.add_argument("file", help="A file to compile")
+    args = argparser.parse_args()
 
-    if len(sys.argv) < 2:
-        logging.error("No file specified")
-        return 1
+    logging.basicConfig(level=(logging.DEBUG if args.verbose else logging.INFO),
+                        format="%(levelname)s:%(message)s")
 
     p = parser.Parser()
     tree = p.parse_file(sys.argv[1])
