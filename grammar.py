@@ -19,12 +19,14 @@ RULES = [
     ( "expr", [
         "expr + term".split(),
         "expr - term".split(),
-        [ "term" ]
+        [ "term" ],
+        [ "assignment" ],
     ]),
 
     ( "term", [
         "term * factor".split(),
         "term / factor".split(),
+        "term % factor".split(),
         [ "factor" ],
     ]),
 
@@ -34,8 +36,29 @@ RULES = [
         "( expr )".split(),
     ]),
 
+    ( "assignment", [
+        "id = expr".split(),
+        "id += expr".split(),
+        "id -= expr".split(),
+        "id *= expr".split(),
+        "id /= expr".split(),
+    ]),
+
+    ( "if_statement", [
+        "if ( expr ) statement".split(),
+        "if ( expr ) statement else statement".split(),
+    ]),
+
+    ( "block", [
+        "{ statement_list }".split(),
+    ]),
+
     ( "statement", [
+        "return expr ;".split(),
+        "return ;".split(),
         "expr ;".split(),
+        [ "block" ],
+        [ "if_statement" ],
         [ ";" ],
     ]),
 
@@ -45,7 +68,7 @@ RULES = [
     ]),
 
     ( "function", [
-        "id ( ) { statement_list }".split(),
+        "id ( ) block".split(),
     ]),
 
     ( FINAL_STATE, [
@@ -55,9 +78,10 @@ RULES = [
 ]
 
 TERMINALS = [
+    ( "keyword",  to_regex(words="return if else".split()) ),
     ( "literal",  to_regex(chars=string.digits) ),
     ( "id",       to_regex(chars=string.ascii_letters + string.digits + "_") ),
-    ( "operator", to_regex(words="+ - * / % = < > == && ||".split(), single=True) ),
+    ( "operator", to_regex(words="+ - * / % = += -= *= /= < > == && ||".split()) ),
     ( "control",  to_regex(chars="{()};", single=True) ),
 ]
 
@@ -116,7 +140,7 @@ class Token(object):
         self.position = token.position
 
     def bnf(self):
-        if self.type in ("operator", "control"):
+        if self.type in ("operator", "control", "keyword"):
             return self.lexeme
         return self.type
 

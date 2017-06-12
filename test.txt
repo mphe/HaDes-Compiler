@@ -2,14 +2,27 @@ someFunction()
 {
     statement;
     statement + 1;
-    4;
-    a + 2;
-};
+    b = a + 2;
+    c = 5;
+    c += (b + c);
+    c /= b;
+    return c;
+}
 
 foo()
 {
-    a + (b - c);
-    (a + b) / (b - c);
+    if (true)
+    {
+        a + (b - c);
+        (a + b) / (b - c);
+    }
+
+    if (a)
+        return a;
+    else if (1 + 1)
+        return b;
+    else
+        return c;
 }
 
 1*x + y;
