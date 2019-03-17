@@ -1,29 +1,35 @@
-someFunction()
+def main()
 {
-    statement;
-    statement + 1;
-    b = a + 2;
-    c = 5;
-    c += (b + c);
-    c /= b;
-    return c;
-}
+    somevar = 1;
 
-foo()
-{
-    if (true)
+    if (somevar)
     {
-        a + (b - c);
-        (a + b) / (b - c);
+        d = somevar + 1;
+    }
+    else
+    {
+        d = somevar - (5 + b) * 3 + 1;
     }
 
-    if (a)
-        return a;
-    else if (1 + 1)
-        return b;
-    else
-        return c;
+    c = 0;
+    i = 0;
+    while (i < 10)
+    {
+        c = c + foo(c, somevar + i);
+        i = i + 1;
+
+        if (c > 100)
+        {
+            foo();
+            pwrite(c, 165);
+            break;
+        }
+    }
+
+    return d;
 }
 
-1*x + y;
-a + b - c / d;
+def foo(x, y)
+{
+    return x * y;
+}

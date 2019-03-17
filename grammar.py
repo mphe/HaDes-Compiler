@@ -16,49 +16,15 @@ def to_regex(chars="", words=[], single=False):
 FINAL_STATE = "program"
 
 RULES = [
-    ( "expr", [
-        "expr + term".split(),
-        "expr - term".split(),
-        [ "term" ],
-        [ "assignment" ],
-    ]),
-
-    ( "term", [
-        "term * factor".split(),
-        "term / factor".split(),
-        "term % factor".split(),
-        [ "factor" ],
-    ]),
-
-    ( "factor", [
-        [ "id" ],
-        [ "literal" ],
-        "( expr )".split(),
-    ]),
-
-    ( "assignment", [
-        "id = expr".split(),
-        "id += expr".split(),
-        "id -= expr".split(),
-        "id *= expr".split(),
-        "id /= expr".split(),
-    ]),
-
-    ( "if_statement", [
+    ( "statement", [
         "if ( expr ) statement".split(),
         "if ( expr ) statement else statement".split(),
-    ]),
-
-    ( "block", [
-        "{ statement_list }".split(),
-    ]),
-
-    ( "statement", [
+        "while ( expr ) statement".split(),
         "return expr ;".split(),
-        "return ;".split(),
+        "break ;".split(),
+        "continue ;".split(),
         "expr ;".split(),
-        [ "block" ],
-        [ "if_statement" ],
+        "{ statement_list }".split(),
         [ ";" ],
     ]),
 
@@ -68,21 +34,109 @@ RULES = [
     ]),
 
     ( "function", [
-        "id ( ) block".split(),
+        "def id ( ) statement".split(),
+        "def id ( param_list ) statement".split(),
     ]),
 
     ( FINAL_STATE, [
         [ "statement" ],
         [ "function" ],
     ]),
+
+    ( "expr", [
+        [ "expr_assignment" ],
+    ]),
+
+    ( "expr_assignment", [
+        "id = expr_logic_or".split(),
+        [ "expr_logic_or" ],
+    ]),
+
+    ( "expr_logic_or", [
+        "expr_logic_or || expr_logic_and".split(),
+        [ "expr_logic_and" ],
+    ]),
+
+    ( "expr_logic_and", [
+        "expr_logic_and && expr_bitwise".split(),
+        [ "expr_bitwise" ],
+    ]),
+
+    ( "expr_bitwise", [
+        "expr_bitwise & expr_compare".split(),
+        "expr_bitwise ^ expr_compare".split(),
+        "expr_bitwise | expr_compare".split(),
+        [ "expr_compare" ],
+    ]),
+
+    ( "expr_compare", [
+        "expr_compare == expr_shift".split(),
+        "expr_compare != expr_shift".split(),
+        "expr_compare < expr_shift".split(),
+        "expr_compare > expr_shift".split(),
+        "expr_compare <= expr_shift".split(),
+        "expr_compare >= expr_shift".split(),
+        [ "expr_shift" ],
+    ]),
+
+    ( "expr_shift", [
+        "expr_shift << expr_sum".split(),
+        "expr_shift >> expr_sum".split(),
+        "expr_shift <<< expr_sum".split(),
+        "expr_shift >>> expr_sum".split(),
+        [ "expr_sum" ],
+    ]),
+
+    ( "expr_sum", [
+        "expr_sum + expr_mult".split(),
+        "expr_sum - expr_mult".split(),
+        [ "expr_mult" ],
+    ]),
+
+    ( "expr_mult", [
+        "expr_mult * operand".split(),
+        [ "operand" ],
+    ]),
+
+    ( "operand", [
+        [ "id" ],
+        [ "literal" ],
+        [ "call_statement" ],
+        "( expr )".split(),
+    ]),
+
+    ( "call_statement", [
+        "id ( )".split(),
+        "id ( param_list )".split(),
+    ]),
+
+    ( "param_list", [
+        "param_list , expr".split(),
+        [ "expr" ],
+    ]),
+
+    # ( "if_statement", [
+    #     "if ( expr ) statement".split(),
+    #     "if ( expr ) statement else statement".split(),
+    # ]),
+
+    # ( "while_statement", [
+    #     "while ( expr ) statement".split(),
+    # ]),
+
+    # ( "return_statement", [
+    #     "return expr ;".split(),
+    # ]),
 ]
 
+# if you add something here, also check Token.bnf() function!
 TERMINALS = [
-    ( "keyword",  to_regex(words="return if else".split()) ),
+    ( "keyword",  to_regex(words="return continue break def while if else".split()) ),
+    # ( "builtin",  to_regex(words="return break".split()) ),
     ( "literal",  to_regex(chars=string.digits) ),
     ( "id",       to_regex(chars=string.ascii_letters + string.digits + "_") ),
-    ( "operator", to_regex(words="+ - * / % = += -= *= /= < > == && ||".split()) ),
-    ( "control",  to_regex(chars="{()};", single=True) ),
+    ( "operator", to_regex(words="+ - * = += -= *= < > == != ! && || <= >= << >> | & ^ <<< >>>".split()) ),
+    ( "control",  to_regex(chars="{()};,", single=True) ),
 ]
 
 WHITESPACE = to_regex(chars=string.whitespace)
@@ -123,14 +177,50 @@ class Token(object):
         for i in self.tokens:
             i.print(depth + 1)
 
+    def is_literal(self):
+        return self.type == "literal"
+
+    def is_id(self):
+        return self.type == "id"
+
+    def is_terminal(self):
+        for i in TERMINALS:
+            if self.type == i[0]:
+                return True
+        return False
+
+    def is_expr(self):
+        return self.type.startswith("expr")
+
+    def _simplify_lists(self):
+        if str(self).endswith("_list"):
+            l = []
+            for i in self.tokens:
+                if str(i) == str(self):
+                    i._simplify_lists()
+                    l += i.tokens
+                else:
+                    l.append(i)
+            self.tokens = l
+
     def _simplify(self):
+        self._simplify_lists()
+
         for i in self.tokens:
             i._simplify()
 
-        # strip control chars
-        self.tokens = [ i for i in self.tokens if i.type != "control" ]
+        if str(self) == FINAL_STATE:
+            return
+
+        # strip control chars and keywords
+        self.tokens = [ i for i in self.tokens if i.type not in ("control") ]
+
+        # strip empty tokens
+        self.tokens = [ i for i in self.tokens if i.is_terminal() or len(i.tokens) > 0 ]
 
         while len(self.tokens) == 1:
+            if self.type.endswith("_list") or self.type.endswith("_statement"):
+                break
             self._clone(self.tokens[0])
 
     def _clone(self, token):
@@ -140,9 +230,14 @@ class Token(object):
         self.position = token.position
 
     def bnf(self):
-        if self.type in ("operator", "control", "keyword"):
-            return self.lexeme
-        return self.type
+        # if self.type in ("operator", "control", "keyword", "builtin"):
+        if self.is_literal() or self.is_id():
+            return self.type
+        return self.lexeme
+
+    def line_info(self):
+        return "In line {}, column {}: {}".format(
+            self.position.line + 1, self.position.col + 1, str(self))
 
     def __str__(self):
         if self.type in ("id", "literal"):

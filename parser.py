@@ -34,13 +34,12 @@ class Parser(object):
                 else:
                     logging.error("Syntax Error:")
                     errsym = self.symbols[self.pos]
-                    logging.error("\tIn line {}, column {}: {}".format(
-                        errsym.position.line + 1, errsym.position.col + 1, errsym ))
+                    logging.error("\t" + errsym.line_info())
                     return None
             else:
                 program.append(token)
 
-        out = grammar.Token("root", tokens=program)
+        out = grammar.Token(grammar.FINAL_STATE, tokens=program)
         out._simplify()
         return out
 
